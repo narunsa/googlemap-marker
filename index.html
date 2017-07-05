@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="location-input-group">
+    <div id="location-input-1">
+      <input id="pac-input" type="text" placeholder="Enter a location">
+      <button onClick="deleteInput(this.parentNode)">Delete</button>
+    </div>
+  </div>
+
+  <button onClick="addInput()">Add</button>
+  <div id="map"></div>
+
+  <script>
+    var currentInput = 1;
+    var markers = [];
+    var map;
+
+    // Create new input
+    function addInput() {
+      let locationInput = document.getElementById(`location-input-${currentInput}`);
+
+      let cloneInput = locationInput.cloneNode(true);
+
+      cloneInput.style.display = 'block';
+      cloneInput.id = `location-input-${currentInput + 1}`;
+      cloneInput.getElementsByTagName('input')[0].id = `pac-input-${currentInput + 1}`;
+      cloneInput.getElementsByTagName('input')[0].value = '';
+
+      document.getElementById("location-input-group").appendChild(cloneInput);
+
+      currentInput += 1;
+    }
+
+    // Delete input
+    function deleteInput(el) {
+      el.style.display = 'none';
+    }
+
+    function setMapOnAll(map) {
+        for (var i = 0; i < markers.length; i++) {
+          markers[i].setMap(map);
+        }
+      }
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 4,
+        center: { lat: 0, lng: 0 }
+      });
+
+      document.getElementById('location-input-group').addEventListener('focus', function (e) {
+
+        // Trigger if delete input
+        if (e.target.nodeName == 'BUTTON') {
+          let inputId = e.target.parentElement.id.split("-")[2];
+          markers[+inputId-1].visible = false;
+          setMapOnAll(map);
+        }
+
+        // Add listener to focus input
+        if (e.target.nodeName == 'INPUT') {
+          var autocomplete = new google.maps.places.Autocomplete(document.getElementById(`${e.target.id}`));
+          var infowindow = new google.maps.InfoWindow();
+
+          autocomplete.addListener('place_changed', function () {
+            infowindow.close();
+
+            var place = autocomplete.getPlace();
+            if (!place.geometry) {
+              window.alert("No details available for input: '" + place.name + "'");
+              return;
+            }
+
+            if (place.geometry.viewport) {
+              map.fitBounds(place.geometry.viewport);
+            } else {
+              map.setCenter(place.geometry.location);
+              map.setZoom(17);
+            }
+
+            var address = '';
+            if (place.address_components) {
+              address = [
+                (place.address_components[0] && place.address_components[0].short_name || ''),
+                (place.address_components[1] && place.address_components[1].short_name || ''),
+                (place.address_components[2] && place.address_components[2].short_name || '')
+              ].join(' ');
+            }
+
+            markers.push(
+              new google.maps.Marker({
+                position: {
+                  lat: place.geometry.location.lat(),
+                  lng: place.geometry.location.lng()
+                },
+                map: map
+              })
+            );
+
+          });
+        }
+      }, true);
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCC7FMzdxpo4JEbmd2f0xqS2dcZ3FpcKYI&libraries=places&callback=initMap">
+  </script>
+</body>
+
+</html>
